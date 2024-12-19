@@ -31,7 +31,9 @@ class Candidate(BaseModel):
 class CandidateRequest(BaseModel):
     role_id: str
     top_n: int
-
+class CandidateRequest2(BaseModel):
+    role_id: str
+    
 class EmailRequest(BaseModel):
     email: str
     candidates: List[Candidate]

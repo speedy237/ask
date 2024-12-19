@@ -1,18 +1,17 @@
 from datetime import datetime
 from typing import List
 from database import get_db_connection
-from requestData import Candidate, CandidateRequest, ChatRequest, EmailRequest, JobRequest, RequestChain, TestRequest
-from utils import chat_gpt, getData, langchain_agent, langchain_agent_sql, send_email_with_gmail
+from requestData import Candidate, CandidateRequest, CandidateRequest2, EmailRequest
+from utils import create_custom_xml_from_any_data, getData, send_email_with_gmail
 from fastapi import FastAPI, HTTPException # type: ignore
 from fastapi.responses import FileResponse # type: ignore
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
-import openai # type: ignore
 import os
-from dotenv import load_dotenv # type: ignore
+
 XML_FOLDER = "../front/demo-ask/public/data"
 os.makedirs(XML_FOLDER, exist_ok=True)
 
-load_dotenv()
+
 app = FastAPI()
 
 app.add_middleware(
@@ -53,6 +52,58 @@ def send_email(request: EmailRequest):
 
 @app.get("/role")
 async def getRole():
-     response=getData(host="192.168.1.181",user="jordan",db="aubay",password="jordan",query="select IDjob from applications;")
+     response=getData(host="192.168.1.181",user="jordan",db="aubay",password="jordan",query="select IDjob, Role from applications;")
 
      return {"message":response}
+
+@app.post("/getXMLFile/")
+def get_xml_file(data: list[dict]): # type: ignore
+    """
+    Génère un fichier XML à partir des données et le retourne.
+    :param data: Liste de tuples [(label, value), ...]
+    """
+    if not data:
+        raise HTTPException(status_code=400, detail="Data is required to generate XML.")
+    
+    # Génération du nom de fichier avec la date
+    current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"input_data_{current_date}.xml"
+    output_file = os.path.join(XML_FOLDER, filename)
+    
+    create_custom_xml_from_any_data(data, output_file)
+    
+    return {"filename":filename}
+
+@app.post("/candidates/all/", response_model=List[Candidate])
+def get_all_candidates(request: CandidateRequest2):
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            query = (
+                "SELECT applicantName, Score,Experience, Certification, Diplome, Soft, Hard "
+                "FROM applications WHERE IDjob = %s ORDER BY Score DESC "
+            )
+            cursor.execute(query, (request.role_id))
+            candidates = cursor.fetchall()
+            if not candidates:
+                raise HTTPException(status_code=404, detail="No candidates found for the specified role.")
+            return candidates
+    finally:
+        connection.close()
+
+@app.post("/experience/", response_model=List[Candidate])
+def get_all_experience(request: CandidateRequest2):
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            query = (
+                "SELECT Experience, COUNT(*) AS NombreDeCandidats "
+                "FROM applications WHERE IDjob = %s  GROUP BY Experience ORDER BY 2 DESC; "
+            )
+            cursor.execute(query, (request.role_id))
+            candidates = cursor.fetchall()
+            if not candidates:
+                raise HTTPException(status_code=404, detail="No candidates found for the specified role.")
+            return candidates
+    finally:
+        connection.close()

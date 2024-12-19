@@ -9,11 +9,36 @@ from database import getData
 from sqlalchemy import create_engine # type: ignore
 
 EMAIL_CONFIG = {
-    "smtp_server": "smtp.mail.yahoo.com",
+    "smtp_server": "smtp.gmail.com ",
     "smtp_port": 587,
-    "username": "yiyuemej@yahoo.fr",
-    "password": "vkpknbjvbyjphgbj",
+    "username": "gael.kamdemdeteyou@gmail.com",
+    "password": "dhzd ycws kerq dhcb",
 }
+
+def create_custom_xml_from_any_data(data, output_file):
+    """
+    Convertit n'importe quel tableau de dictionnaires en format XML avec des balises <label> et <value>.
+    
+    :param data: Liste de dictionnaires avec des paires clé-valeur
+    :param output_file: Chemin du fichier XML à créer
+    """
+    # Créer la racine XML
+    root = ET.Element("data")
+
+    for record in data:
+        entry = ET.SubElement(root, "entry")
+
+        for key, value in record.items():
+            label = ET.SubElement(entry, "label")
+            label.text = str(key)
+
+            val = ET.SubElement(entry, "value")
+            val.text = str(value)
+
+    # Convertir l'arbre XML en chaîne et l'écrire dans un fichier
+    tree = ET.ElementTree(root)
+    with open(output_file, "wb") as f:
+        tree.write(f, encoding="utf-8", xml_declaration=True)
 
 def send_email_with_gmail(recipient_email: str, candidates: List[Candidate]):
     try:
@@ -79,16 +104,16 @@ def send_email_with_gmail(recipient_email: str, candidates: List[Candidate]):
 
         # Configuration du message
         msg = MIMEMultipart()
-        msg['From'] = "yiyuemej@yahoo.fr"
+        msg['From'] = "gael.kamdemdeteyou@gmail.com"
         msg['To'] = recipient_email
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'html'))
 
         # Connexion au serveur SMTP Yahoo
-        server = smtplib.SMTP('smtp.mail.yahoo.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com ', 587)
         server.starttls()
-        server.login('yiyuemej@yahoo.fr', 'vkpknbjvbyjphgbj')
-        server.sendmail('yiyuemej@yahoo.fr', recipient_email, msg.as_string())
+        server.login('gael.kamdemdeteyou@gmail.com', 'dhzd ycws kerq dhcb')
+        server.sendmail('gael.kamdemdeteyou@gmail.com', recipient_email, msg.as_string())
         server.quit()
 
     except Exception as e:

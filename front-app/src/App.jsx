@@ -11,7 +11,7 @@ function App() {
   return (
     <div className="App">
     <header className="App-header">
-      <h1 className="text-center mt-4">Candidate Email Sender</h1>
+      <h1 className="text-center mt-4"> Aubay Job Applications Analysis</h1>
     </header>
     <main className="container">
       {/* Inclure le composant EmailSender */}

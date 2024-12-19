@@ -1,13 +1,27 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { Bar } from "react-chartjs-2";
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+  } from "chart.js";
+  
+  ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const EmailSender = () => {
   const [email, setEmail] = useState("");
   const [roleIDs, setRoleIDs] = useState([]);
   const [selectedRoleID, setSelectedRoleID] = useState("");
   const [topN, setTopN] = useState(0);
-  const [candidates, setCandidates] = useState([]);
+  const [allCandidates, setAllCandidates] = useState([]);
+  const [topCandidates, setTopCandidates] = useState([]);
   const [message, setMessage] = useState("");
+  const [showChart, setShowChart] = useState(false);
 
   // Fetch RoleIDs on load
   useEffect(() => {
@@ -16,7 +30,7 @@ const EmailSender = () => {
         const response = await axios.get("http://localhost:8000/role");
         const uniqueRoleIDs = [
           ...new Set(response.data.message.map((role) => role.IDjob)),
-        ]; // Extract unique RoleIDs
+        ];
         setRoleIDs(uniqueRoleIDs);
       } catch (error) {
         setMessage("Failed to fetch RoleIDs.");
@@ -25,19 +39,23 @@ const EmailSender = () => {
     fetchRoleIDs();
   }, []);
 
-  // Fetch candidates based on RoleID and Top N
+  // Fetch candidates based on RoleID
   const fetchCandidates = async () => {
-    if (!selectedRoleID || topN <= 0) {
-      setMessage("Please select a RoleID and enter a valid number of candidates.");
+    if (!selectedRoleID) {
+      setMessage("Please select a RoleID.");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/candidates", {
+      const response = await axios.post("http://localhost:8000/candidates/all/", {
         role_id: selectedRoleID,
-        top_n: topN,
       });
-      setCandidates(response.data);
+      const allFetchedCandidates = response.data;
+      setAllCandidates(allFetchedCandidates);
+
+      // Set top N candidates
+      const topFetchedCandidates = allFetchedCandidates.slice(0, topN);
+      setTopCandidates(topFetchedCandidates);
     } catch (error) {
       setMessage("Failed to fetch candidates.");
     }
@@ -49,26 +67,36 @@ const EmailSender = () => {
       setMessage("Please provide an email address.");
       return;
     }
-    if (candidates.length === 0) {
+    if (topCandidates.length === 0) {
       setMessage("Please fetch candidates before sending the email.");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/send-email", {
+      await axios.post("http://localhost:8000/send-email", {
         email,
-        candidates
+        candidates: topCandidates,
       });
-      setMessage(response.data.message);
+      setMessage("Email sent successfully.");
     } catch (error) {
       setMessage("Failed to send email.");
     }
   };
 
+  // Prepare data for the bar chart
+  const chartData = {
+    labels: allCandidates.map((candidate) => candidate.applicantName),
+    datasets: [
+      {
+        label: "Experiences",
+        data: allCandidates.map((candidate) => candidate.Experience),
+        backgroundColor: "rgba(54, 162, 235, 0.6)",
+      },
+    ],
+  };
+
   return (
     <div className="container mt-5">
-      
-
       {/* Email Input */}
       <div className="mb-3">
         <label htmlFor="email" className="form-label">
@@ -121,13 +149,13 @@ const EmailSender = () => {
 
       {/* Fetch Candidates Button */}
       <button className="btn btn-primary mb-3" onClick={fetchCandidates}>
-        Fetch Candidates
+        Search Candidates
       </button>
 
       {/* Candidates Table */}
-      {candidates.length > 0 && (
+      {topCandidates.length > 0 && (
         <div className="mt-4">
-          <h3>Candidates List</h3>
+          <h3>Top {topN} Candidates List</h3>
           <table className="table table-bordered">
             <thead>
               <tr>
@@ -141,7 +169,7 @@ const EmailSender = () => {
               </tr>
             </thead>
             <tbody>
-              {candidates.map((candidate, index) => (
+              {topCandidates.map((candidate, index) => (
                 <tr key={index}>
                   <td>{candidate.applicantName}</td>
                   <td>{candidate.Score}</td>
@@ -154,6 +182,24 @@ const EmailSender = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Bar Chart Button */}
+      {allCandidates.length > 0 && (
+        <button
+          className="btn btn-info mt-3"
+          onClick={() => setShowChart(!showChart)}
+        >
+          {showChart ? "Hide Chart" : "Show Chart"}
+        </button>
+      )}
+
+      {/* Bar Chart */}
+      {showChart && (
+        <div className="mt-4">
+          <h3>Bar Chart: Candidates Experiience</h3>
+          <Bar data={chartData} />
         </div>
       )}
 
