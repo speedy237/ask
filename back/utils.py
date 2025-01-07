@@ -247,7 +247,7 @@ def send_email2(recipient_email: str, applications: List[ApplicationData], topN:
         """
         body+=f"""
         Bonjour, <br/>
-        Veuilez trouver ci-dessous le {topN} des candidats pour chaque poste
+        Veuilez trouver ci-dessous le top {topN} des candidats pour chaque poste
         """
 
         # Génération des tableaux pour chaque IDJob
@@ -286,12 +286,14 @@ def send_email2(recipient_email: str, applications: List[ApplicationData], topN:
                 </tbody>
             </table>
             <br/>
-            
-            Cordialement, 
+
+
             
             """
 
         body += """
+        Cordialement,
+        L'Equipe Aubay
         </body>
         </html>
         """
