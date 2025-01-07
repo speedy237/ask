@@ -6,9 +6,9 @@ from sqlalchemy.engine import Row # type: ignore
 import os
 
 DB_CONFIG = {
-    "host": "192.168.1.181",
-    "user": "jordan",
-    "password": "jordan",
+    "host": "localhost",
+    "user": "root",
+    "password": "",
     "database": "aubay",
     "cursorclass": pymysql.cursors.DictCursor,
 }
@@ -58,7 +58,7 @@ def getData(host:str,user:str,db:str,password:str,query:str):
     with engine.connect() as connection:
       with connection.begin():
         result=connection.execute(text(query)).fetchall()
-        print("DEBUG: Raw result:", result)
+        #print("DEBUG: Raw result:", result)
         return [row._asdict() if isinstance(row, Row) else dict(row) for row in result]
       
 

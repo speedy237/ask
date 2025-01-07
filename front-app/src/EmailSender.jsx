@@ -22,6 +22,10 @@ const EmailSender = () => {
   const [topCandidates, setTopCandidates] = useState([]);
   const [message, setMessage] = useState("");
   const [showChart, setShowChart] = useState(false);
+  const [allExperience, setAllExperience] = useState([]);
+  const [topApplications, setTopApplications] = useState([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Fetch RoleIDs on load
   useEffect(() => {
@@ -32,12 +36,17 @@ const EmailSender = () => {
           ...new Set(response.data.message.map((role) => role.IDjob)),
         ];
         setRoleIDs(uniqueRoleIDs);
+        
       } catch (error) {
         setMessage("Failed to fetch RoleIDs.");
       }
     };
     fetchRoleIDs();
   }, []);
+
+
+
+  
 
   // Fetch candidates based on RoleID
   const fetchCandidates = async () => {
@@ -47,8 +56,10 @@ const EmailSender = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/candidates/all/", {
+      const response = await axios.post("http://localhost:8000/role/candidate/", {
         role_id: selectedRoleID,
+        start_date: startDate,
+        end_date: endDate,
       });
       const allFetchedCandidates = response.data;
       setAllCandidates(allFetchedCandidates);
@@ -61,21 +72,33 @@ const EmailSender = () => {
     }
   };
 
+ 
+
   // Send email
   const sendEmail = async () => {
     if (!email) {
       setMessage("Please provide an email address.");
       return;
     }
-    if (topCandidates.length === 0) {
+
+    const response = await axios.get("http://localhost:8000/all");
+    const allFetchedApplication = response.data;
+    setTopApplications(allFetchedApplication);
+
+    if (topApplications.length === 0) {
       setMessage("Please fetch candidates before sending the email.");
       return;
     }
 
+
     try {
+      console.log(email)
+      console.log("-----------------")
+      console.log(topApplications.length)
       await axios.post("http://localhost:8000/send-email", {
-        email,
-        candidates: topCandidates,
+        email:email,
+        applications: topApplications,
+        topN:topN,
       });
       setMessage("Email sent successfully.");
     } catch (error) {
@@ -84,16 +107,38 @@ const EmailSender = () => {
   };
 
   // Prepare data for the bar chart
+
+  const fetchExperience = async () => {
+    if (!selectedRoleID) {
+      setMessage("Please select a RoleID.");
+      return;
+    }
+  
+    try {
+      const response = await axios.post("http://localhost:8000/experience/", {
+        role_id: selectedRoleID,
+      });
+      const fetchedExperience = response.data;
+      setAllExperience(fetchedExperience || []); // Par sécurité, définir un tableau vide si les données sont nulles
+      setShowChart(!showChart);
+      console.table(fetchedExperience);
+    } catch (error) {
+      setMessage("Failed to fetch Experience.");
+    }
+  };
+  
+
   const chartData = {
-    labels: allCandidates.map((candidate) => candidate.applicantName),
+    labels: (allExperience || []).map((experience) => experience.Experience),
     datasets: [
       {
-        label: "Experiences",
-        data: allCandidates.map((candidate) => candidate.Experience),
+        label: "NombreDeCandidats",
+        data: (allExperience || []).map((experience) => experience.NombreDeCandidats),
         backgroundColor: "rgba(54, 162, 235, 0.6)",
       },
     ],
   };
+  
 
   return (
     <div className="container mt-5">
@@ -132,6 +177,34 @@ const EmailSender = () => {
         </select>
       </div>
 
+       {/* Start Date Input */}
+       <div className="mb-3">
+        <label htmlFor="startDate" className="form-label">
+          Start Date
+        </label>
+        <input
+          type="date"
+          className="form-control"
+          id="startDate"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+      </div>
+
+      {/* End Date Input */}
+      <div className="mb-3">
+        <label htmlFor="endDate" className="form-label">
+          End Date
+        </label>
+        <input
+          type="date"
+          className="form-control"
+          id="endDate"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
+      </div>
+
       {/* Top N Input */}
       <div className="mb-3">
         <label htmlFor="topN" className="form-label">
@@ -162,10 +235,8 @@ const EmailSender = () => {
                 <th>Name</th>
                 <th>Score</th>
                 <th>Experience</th>
-                <th>Certification</th>
-                <th>Diplome</th>
-                <th>Soft Skills</th>
-                <th>Hard Skills</th>
+                <th>Date</th>
+             
               </tr>
             </thead>
             <tbody>
@@ -174,10 +245,8 @@ const EmailSender = () => {
                   <td>{candidate.applicantName}</td>
                   <td>{candidate.Score}</td>
                   <td>{candidate.Experience}</td>
-                  <td>{candidate.Certification}</td>
-                  <td>{candidate.Diplome}</td>
-                  <td>{candidate.Soft}</td>
-                  <td>{candidate.Hard}</td>
+                  <td>{candidate.Date}</td>
+                 
                 </tr>
               ))}
             </tbody>
@@ -189,19 +258,18 @@ const EmailSender = () => {
       {allCandidates.length > 0 && (
         <button
           className="btn btn-info mt-3"
-          onClick={() => setShowChart(!showChart)}
+          onClick={() => fetchExperience()}
         >
           {showChart ? "Hide Chart" : "Show Chart"}
         </button>
       )}
 
-      {/* Bar Chart */}
-      {showChart && (
-        <div className="mt-4">
-          <h3>Bar Chart: Candidates Experiience</h3>
-          <Bar data={chartData} />
-        </div>
+      {showChart && allExperience.length > 0 ? (
+           <Bar data={chartData} />
+      ) : (
+           <p>No data available to display the chart.</p>
       )}
+
 
       {/* Send Email Button */}
       <button className="btn btn-success mt-3" onClick={sendEmail}>
