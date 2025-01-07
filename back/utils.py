@@ -66,6 +66,8 @@ def send_email_with_gmail(recipient_email: str, candidates: List[ApplicationData
             </style>
         </head>
         <body>
+        """
+        body+=f"""
         Bonjour, <br/>
         
             <h1>Top  Candidates </h1>
@@ -242,13 +244,16 @@ def send_email2(recipient_email: str, applications: List[ApplicationData], topN:
             </style>
         </head>
         <body>
+        """
+        body+=f"""
         Bonjour, <br/>
+        Veuilez trouver ci-dessous le {topN} des candidats pour chaque poste
         """
 
         # Génération des tableaux pour chaque IDJob
         for IDjob, candidates in grouped_candidates.items():
             role = candidates[0].Role  # Supposons que le rôle est identique pour un IDJob donné
-            body += f"<h2>Top {topN} Candidates for {role}</h2>"
+            body += f"<h2> {role} </h2>"
             body += """
             <table>
                 <thead>
@@ -281,6 +286,9 @@ def send_email2(recipient_email: str, applications: List[ApplicationData], topN:
                 </tbody>
             </table>
             <br/>
+            
+            Cordialement, 
+            
             """
 
         body += """

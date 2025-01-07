@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import EmailSender from "./EmailSender"; 
+import Job from './job';
 
 function App() {
   const [count, setCount] = useState(0)
